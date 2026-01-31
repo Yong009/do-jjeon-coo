@@ -1,5 +1,6 @@
 package com.example.util;
 
+/*
 import com.example.mapper.StoreMapper;
 import com.example.model.Store;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -67,4 +68,8 @@ public class DataExporter implements CommandLineRunner {
             System.err.println("Failed to export data.");
         }
     }
+}
+*/
+public class DataExporter {
+    // 임시 주석 처리됨
 }

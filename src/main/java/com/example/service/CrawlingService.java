@@ -26,34 +26,36 @@ public class CrawlingService {
 
         try (Playwright playwright = Playwright.create()) {
             Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions().setHeadless(true));
-            Page page = browser.newPage();
+            // 상세 페이지 이동 시 새 탭을 쓰는 게 아니라 현재 페이지를 계속 재활용하거나 새 탭을 여닫습니다.
+            // 여기서는 심플하게 메인 검색용 컨텍스트와 상세용 컨텍스트를 분리하지 않고
+            // 검색 -> 리스트 파싱 -> (링크 있으면) 상세 페이지 방문 -> 뒤로가기 혹은 별도 페이지 객체 활용
 
-            // 최적화: 불필요한 리소스 차단
+            // 더 효율적인 방법: 검색 결과에서 링크만 싹 긁은 뒤, 별도의 페이지 객체로 병렬 방문 (너무 복잡해지니 순차 방문으로 구현)
+            Page page = browser.newPage();
             page.route("**/*.{png,jpg,jpeg,gif,svg,css,woff,woff2}", route -> route.abort());
 
             page.navigate("https://map.kakao.com/?q=" + keyword);
 
             try {
-                // 리스트 아이템 대기 (타임아웃 15초)
+                // 리스트 아이템 대기
                 page.waitForSelector("#info\\.search\\.place\\.list > li.PlaceItem",
-                        new Page.WaitForSelectorOptions().setTimeout(15000));
+                        new Page.WaitForSelectorOptions().setTimeout(10000));
 
                 Locator items = page.locator("#info\\.search\\.place\\.list > li.PlaceItem");
-                int count = items.count(); // 첫 페이지의 아이템 개수 (카카오는 보통 15개 표시)
+                int count = items.count();
 
-                // 참고: 모든 매장을 가져오려면 지도 사이트의 페이지네이션을 처리해야 합니다.
-                // 현재 로직대로 첫 페이지 결과만 스크래핑합니다.
+                // 임시 저장용 리스트 (상세 페이지 방문을 위해 링크만 먼저 수집)
+                List<Store> tempList = new ArrayList<>();
 
                 for (int i = 0; i < count; i++) {
                     Locator item = items.nth(i);
+                    String name = item.locator(".head_item .tit_name .link_name").first().innerText();
+                    String address = "";
+                    if (item.locator(".info_item .addr p").count() > 0) {
+                        address = item.locator(".info_item .addr p").first().innerText();
+                    }
 
-                    // 이름
-                    Locator nameEl = item.locator(".head_item .tit_name .link_name").first();
-                    String name = nameEl.innerText();
-
-                    // 링크
                     String link = "";
-                    // 1. 'moreview' 시도
                     Locator moreViewBtn = item.locator(".moreview").first();
                     if (moreViewBtn.count() > 0) {
                         String href = moreViewBtn.getAttribute("href");
@@ -61,31 +63,58 @@ public class CrawlingService {
                             link = href;
                         }
                     }
-                    // 2. 대체 방법
-                    if (link.isEmpty() && nameEl.count() > 0) {
-                        String href = nameEl.getAttribute("href");
+                    if (link.isEmpty() && item.locator(".head_item .tit_name .link_name").count() > 0) {
+                        String href = item.locator(".head_item .tit_name .link_name").getAttribute("href");
                         if (href != null && !href.isEmpty())
                             link = href;
                     }
 
-                    // 주소
-                    String address = "";
-                    if (item.locator(".info_item .addr p").count() > 0) {
-                        address = item.locator(".info_item .addr p").first().innerText();
-                    }
-
                     if (!name.isEmpty() && !address.isEmpty()) {
-                        list.add(new Store(name, address, null, null, link));
+                        tempList.add(new Store(name, address, null, null, link, null));
                     }
                 }
 
+                // 상세 페이지 방문하여 영업시간 추출 (속도 향상을 위해 5개까지만 제한하거나 전체 다 함)
+                // 사용자 요청: "하나하나 다 들어갔다 나오게" -> 전체 수행
+                for (Store store : tempList) {
+                    if (store.getLink() != null && !store.getLink().isEmpty()) {
+                        try {
+                            Page detailPage = browser.newPage(); // 새 탭
+                            detailPage.route("**/*.{png,jpg,jpeg,gif,svg,css,woff,woff2}", route -> route.abort());
+
+                            // 로컬서버 등에서의 차단을 막기 위해 User-Agent 설정
+                            // detailPage.setExtraHTTPHeaders(...); (필요시)
+
+                            detailPage.navigate(store.getLink());
+
+                            // 영업시간 추출
+                            // 선택자: .location_present .txt_operation
+                            Locator hoursEl = detailPage.locator(".location_present .txt_operation").first();
+                            // 영업시간 더보기 버튼이 있을 수 있음. 단순 텍스트만 가져옴.
+                            if (hoursEl.count() > 0) { // 타임아웃 없이 확인
+                                String hours = hoursEl.innerText();
+                                store.setOpeningHours(hours); // 예: "매일 10:00 ~ 22:00"
+                            } else {
+                                store.setOpeningHours("정보 없음");
+                            }
+
+                            detailPage.close();
+                        } catch (Exception e) {
+                            store.setOpeningHours("확인 불가");
+                        }
+                    } else {
+                        store.setOpeningHours("-");
+                    }
+                    list.add(store);
+                }
+
             } catch (Exception e) {
-                // 타임아웃 무시
+                e.printStackTrace();
             }
 
             browser.close();
         } catch (Exception e) {
-            // 설정 오류 무시
+            e.printStackTrace();
         }
 
         return list;

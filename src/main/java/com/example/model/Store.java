@@ -8,16 +8,18 @@ public class Store {
     private Double longitude;
 
     private String link;
+    private String openingHours;
 
     public Store() {
     }
 
-    public Store(String name, String address, Double latitude, Double longitude, String link) {
+    public Store(String name, String address, Double latitude, Double longitude, String link, String openingHours) {
         this.name = name;
         this.address = address;
         this.latitude = latitude;
         this.longitude = longitude;
         this.link = link;
+        this.openingHours = openingHours;
     }
 
     public Long getId() {
@@ -66,5 +68,13 @@ public class Store {
 
     public void setLink(String link) {
         this.link = link;
+    }
+
+    public String getOpeningHours() {
+        return openingHours;
+    }
+
+    public void setOpeningHours(String openingHours) {
+        this.openingHours = openingHours;
     }
 }
