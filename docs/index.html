@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Do-Jjeon-Coo | 두쫀쿠 (Live)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Kakao Map SDK (Services 라이브러리 포함 필수) -->
+    <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=ff09b5f692fad0cbbb8e690ace21f9c7&libraries=services"></script>
+    
+    <!-- Google AdSense (아래 주석을 해제하고 ca-pub- 뒤에 본인의 게시자 ID를 넣으세요) -->
+    
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2863619342768324"
+     crossorigin="anonymous"></script>
+   
+    
+    <style>
+        body { font-family: 'Noto Sans KR', sans-serif; }
+        .gradient-text {
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        #map {
+            width: 100%;
+            height: 500px;
+            border-radius: 12px;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen text-slate-800 flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-2 cursor-pointer" onclick="location.reload()">
+                <i class="fa-solid fa-utensils text-blue-600 text-2xl"></i>
+                <h1 class="text-2xl font-bold tracking-tight text-slate-900">두쫀쿠 <span class="text-xs text-blue-500 font-normal border border-blue-200 rounded px-1">Live Web</span></h1>
+            </div>
+            <a href="https://github.com/Yong009/do-jjeon-coo" target="_blank" class="text-slate-500 hover:text-blue-600 transition">
+                <i class="fa-brands fa-github text-2xl"></i>
+            </a>
+        </div>
+    </header>
+
+    <main class="flex-grow">
+        <!-- Search Section -->
+        <section class="bg-white border-b border-slate-200 pb-8 pt-8">
+            <div class="max-w-4xl mx-auto px-4 text-center">
+                <h2 class="text-3xl md:text-4xl font-bold mb-4">
+                    실시간 <span class="gradient-text">지역 검색</span>
+                </h2>
+                <div class="bg-white p-2 rounded-full shadow-lg border border-slate-200 flex max-w-xl mx-auto items-center">
+                    <!-- City Select -->
+                    <select id="citySelect" onchange="updateDistricts()" class="bg-transparent px-4 py-3 outline-none text-slate-700 cursor-pointer font-medium border-r border-slate-200">
+                        <option value="서울">서울</option>
+                        <option value="대구">대구</option>
+                    </select>
+
+                    <!-- District Select -->
+                    <select id="districtSelect" class="flex-grow bg-transparent px-4 py-3 outline-none text-slate-700 cursor-pointer font-medium min-w-[100px]">
+                        <!-- Populated by JS -->
+                    </select>
+
+                    <button onclick="searchPlaces()" class="bg-blue-600 text-white rounded-full px-8 py-3 font-semibold hover:bg-blue-700 transition flex items-center gap-2 m-1">
+                        <i class="fa-solid fa-search"></i>
+                        <span>탐색</span>
+                    </button>
+                </div>
+                <p class="text-xs text-slate-400 mt-3">* "선택 지역 + 두쫀쿠" 키워드로 검색된 결과를 표시합니다.</p>
+            </div>
+        </section>
+
+        <!-- AdFit Banner Area (카카오 애드핏 연동 영역) -->
+        <div id="kakao-adfit" class="max-w-7xl mx-auto px-4 mt-4 text-center">
+            <ins class="kakao_ad_area" style="display:none;"
+                data-ad-unit = "DAN-zFTiVOIXW666h4R5"
+                data-ad-width = "728"
+                data-ad-height = "90"></ins>
+            <script type="text/javascript" src="//t1.daumcdn.net/kas/static/ba.min.js" async></script>
+        </div>
+
+        <!-- Coupang Partners Banner Area (쿠팡 파트너스 연동 영역) -->
+        <div id="coupang-partners" class="max-w-7xl mx-auto px-4 mt-4 text-center">
+            <script src="https://ads-partners.coupang.com/g.js"></script>
+            <script>
+                new PartnersCoupang.G({
+                    "id": 961989,
+                    "template": "carousel",
+                    "trackingCode": "AF9667752",
+                    "width": "100%",
+                    "height": "140",
+                    "tsource": ""
+                });
+            </script>
+        </div>
+
+        <!-- Map & List Section -->
+        <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col md:flex-row gap-6 h-full">
+            
+            <!-- Map (Mobile: Top, Desktop: Left) -->
+            <div class="w-full md:w-1/2 h-full">
+                <div id="map" class="shadow-md"></div>
+            </div>
+
+            <!-- List (Mobile: Bottom, Desktop: Right) -->
+            <div class="w-full md:w-1/2 flex flex-col h-[500px]">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold text-slate-900">검색 결과 <span id="resultCount" class="text-blue-600 ml-1 text-base">0</span></h3>
+                    <div class="text-sm text-slate-500">실시간 데이터</div>
+                </div>
+                
+                <div id="loading" class="hidden text-center py-10">
+                    <i class="fa-solid fa-circle-notch fa-spin text-blue-500 text-3xl"></i>
+                    <p class="mt-2 text-slate-500">정보를 찾아오는 중입니다...</p>
+                </div>
+
+                <div id="placeList" class="flex-1 overflow-y-auto pr-2 space-y-3 pb-4">
+                    <!-- Javascript will inject items here -->
+                    <div class="text-center py-20 bg-slate-50 rounded-lg border border-dashed border-slate-300">
+                        <p class="text-slate-400">지역을 선택하고 검색 버튼을 눌러보세요!</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-white border-t border-slate-200 py-6 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 text-center text-slate-500 text-sm">
+            <p>&copy; 2026 Do-Jjeon-Coo Project. All rights reserved.</p>
+            <p class="mt-2">
+                <a href="./privacy.html" class="hover:text-blue-600 underline">개인정보처리방침 (Privacy Policy)</a>
+            </p>
+        </div>
+    </footer>
+
+    <script>
+        var mapContainer = document.getElementById('map');
+        var mapOption = {
+            center: new kakao.maps.LatLng(37.4782, 126.9515), // 기본 위치 (관악구청 인근)
+            level: 7
+        };
+
+        // 지도 생성
+        var map = new kakao.maps.Map(mapContainer, mapOption);
+        
+        // 장소 검색 객체 생성
+        var ps = new kakao.maps.services.Places(); 
+        var infowindow = new kakao.maps.InfoWindow({zIndex:1});
+        var markers = [];
+
+        // 지역 데이터 (Original Data from index.jsp)
+        var regionData = {
+            '서울': ['관악구', '강남구', '서초구', '마포구', '송파구', '홍대'],
+            '대구': ['수성구', '중구', '동구', '달서구', '북구', '서구', '남구', '달성군', '군위군']
+        };
+
+        function updateDistricts() {
+            var citySelect = document.getElementById("citySelect");
+            var districtSelect = document.getElementById("districtSelect");
+            var selectedCity = citySelect.value;
+            
+            districtSelect.innerHTML = "";
+            
+            if (regionData[selectedCity]) {
+                regionData[selectedCity].forEach(function(district) {
+                    var option = document.createElement("option");
+                    option.value = district;
+                    option.text = district;
+                    districtSelect.appendChild(option);
+                });
+            }
+        }
+
+        // 초기화
+        window.onload = function() {
+            updateDistricts();
+        };
+
+        function searchPlaces() {
+            var city = document.getElementById('citySelect').value;
+            var district = document.getElementById('districtSelect').value;
+            
+            if (!city || !district) {
+                alert('지역을 선택해주세요!');
+                return;
+            }
+
+            // UI 업데이트
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('placeList').innerHTML = '';
+            removeMarkers();
+
+            // 키워드 검색 (예: "서울 관악구 두쫀쿠")
+            var keyword = city + " " + district + " 두쫀쿠"; 
+
+            ps.keywordSearch(keyword, placesSearchCB);
+        }
+
+        // 검색 완료 콜백
+        function placesSearchCB(data, status, pagination) {
+            document.getElementById('loading').classList.add('hidden');
+
+            if (status === kakao.maps.services.Status.OK) {
+                displayPlaces(data);
+                displayPagination(pagination);
+            } else if (status === kakao.maps.services.Status.ZERO_RESULT) {
+                alert('검색 결과가 존재하지 않습니다.');
+                return;
+            } else if (status === kakao.maps.services.Status.ERROR) {
+                alert('검색 중 오류가 발생했습니다.');
+                return;
+            }
+        }
+
+        function displayPlaces(places) {
+            var listEl = document.getElementById('placeList');
+            var bounds = new kakao.maps.LatLngBounds();
+
+            document.getElementById('resultCount').innerText = places.length;
+
+            for (var i=0; i<places.length; i++) {
+                var place = places[i];
+                var placePosition = new kakao.maps.LatLng(place.y, place.x);
+                
+                // 마커 생성
+                var marker = addMarker(placePosition, i, place.place_name);
+                bounds.extend(placePosition);
+
+                // 리스트 아이템 생성
+                var itemEl = document.createElement('div');
+                itemEl.className = "bg-white p-4 rounded-lg shadow-sm border border-slate-100 hover:shadow-md transition cursor-pointer flex justify-between items-start group";
+                itemEl.onclick = (function(m, p) {
+                    return function() {
+                        map.panTo(new kakao.maps.LatLng(p.y, p.x));
+                        infowindow.setContent('<div style="padding:5px;font-size:12px;font-weight:bold;">' + p.place_name + '</div>');
+                        infowindow.open(map, m);
+                    }
+                })(marker, place);
+
+                itemEl.innerHTML = `
+                    <div>
+                        <h5 class="font-bold text-slate-800 text-lg mb-1 group-hover:text-blue-600 transition">
+                            <a href="${place.place_url}" target="_blank" onclick="event.stopPropagation()" class="hover:underline">${place.place_name}</a>
+                        </h5>
+                        <p class="text-sm text-slate-500 mb-1">${place.road_address_name || place.address_name}</p>
+                        <p class="text-xs text-blue-500">${place.category_name}</p>
+                    </div>
+                    <div class="text-right">
+                        ${place.phone ? `<p class="text-sm text-slate-400"><i class="fa-solid fa-phone"></i> ${place.phone}</p>` : ''}
+                        <a href="${place.place_url}" target="_blank" class="text-xs bg-slate-100 px-2 py-1 rounded text-slate-600 hover:bg-slate-200 mt-2 inline-block">상세보기</a>
+                    </div>
+                `;
+
+                listEl.appendChild(itemEl);
+            }
+
+            // 지도 범위 재설정
+            map.setBounds(bounds);
+        }
+
+        function addMarker(position, idx, title) {
+            var marker = new kakao.maps.Marker({
+                position: position,
+                clickable: true
+            });
+
+            marker.setMap(map);
+            markers.push(marker);
+
+            kakao.maps.event.addListener(marker, 'click', function() {
+                infowindow.setContent('<div style="padding:5px;font-size:12px;font-weight:bold;">' + title + '</div>');
+                infowindow.open(map, marker);
+            });
+
+            return marker;
+        }
+
+        function removeMarkers() {
+            for (var i = 0; i < markers.length; i++) {
+                markers[i].setMap(null);
+            }
+            markers = [];
+        }
+
+        function displayPagination(pagination) {
+            // 이번 버전에서는 단순화를 위해 페이지네이션 UI는 생략하고 1페이지만 보여줍니다.
+            // 필요시 추가 가능
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,186 @@
+/* Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+
+:root {
+    --primary-color: #6366f1;
+    --primary-hover: #4f46e5;
+    --bg-color: #0f172a;
+    --text-color: #f8fafc;
+    --card-bg: rgba(30, 41, 59, 0.7);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --font-main: 'Inter', sans-serif;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: var(--font-main);
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    line-height: 1.6;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+    background-image: 
+        radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.15) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(168, 85, 247, 0.15) 0%, transparent 40%);
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 2rem;
+    width: 100%;
+}
+
+/* Header */
+header {
+    padding: 2rem 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo {
+    font-size: 1.5rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #6366f1, #a855f7);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: -1px;
+}
+
+/* Hero Section */
+.hero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 3rem 0;
+    flex: 1;
+}
+
+.hero h1 {
+    font-size: 3rem;
+    font-weight: 800;
+    line-height: 1.1;
+    margin-bottom: 1rem;
+    background: linear-gradient(180deg, #fff, #94a3b8);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.hero p {
+    font-size: 1.1rem;
+    color: #94a3b8;
+    max-width: 600px;
+    margin-bottom: 2rem;
+}
+
+/* Glassmorphism Card */
+.card {
+    background: var(--card-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    border-radius: 1rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    transition: transform 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+}
+
+/* Table Styles */
+.store-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    text-align: left;
+    color: var(--text-color);
+}
+
+.store-table th {
+    background-color: rgba(99, 102, 241, 0.2);
+    padding: 12px;
+    font-weight: 600;
+    border-bottom: 2px solid var(--glass-border);
+}
+
+.store-table td {
+    padding: 12px;
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.store-table tr:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* Footer */
+footer {
+    text-align: center;
+    padding: 2rem;
+    color: #64748b;
+    font-size: 0.9rem;
+}
+
+/* Pagination */
+.pagination {
+    display: inline-flex;
+    gap: 5px;
+}
+
+.page-link {
+    color: var(--text-color);
+    padding: 8px 12px;
+    text-decoration: none;
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    border-radius: 6px;
+    transition: all 0.2s;
+}
+
+.page-link:hover {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.page-link.active {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    font-weight: bold;
+}
+
+/* Form Elements */
+.region-select {
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--glass-border);
+    background-color: rgba(30, 41, 59, 0.8);
+    color: var(--text-color);
+    font-family: var(--font-main);
+    cursor: pointer;
+}
+
+.btn {
+    padding: 8px 16px;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.btn:hover {
+    background-color: var(--primary-hover);
+}
