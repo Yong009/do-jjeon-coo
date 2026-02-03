@@ -29,7 +29,6 @@
     
     <!-- Kakao Map SDK (Services 라이브러리 포함 필수) -->
     <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=ff09b5f692fad0cbbb8e690ace21f9c7&libraries=services"></script>
-    <script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js" integrity="sha384-TiCUE00h649CAMonG018J2ujOgDKW/kVWlChEuu4jK2txfZW45nlclAmauiKt7D" crossorigin="anonymous"></script>
     
     <!-- Google AdSense (아래 주석을 해제하고 ca-pub- 뒤에 본인의 게시자 ID를 넣으세요) -->
     
@@ -199,46 +198,7 @@
         </div>
     </footer>
 
-    <!-- Floating Kakao Share Button -->
-    <button onclick="shareKakao()" class="fixed bottom-6 right-6 bg-[#FEE500] text-[#191919] p-4 rounded-full shadow-lg hover:bg-[#FDD835] transition-transform hover:scale-110 z-40 flex items-center justify-center w-14 h-14" title="카카오톡 공유하기">
-        <i class="fa-solid fa-comment text-2xl"></i>
-    </button>
-
-
     <script>
-        // Kakao SDK 초기화
-        try {
-            if (!Kakao.isInitialized()) {
-                Kakao.init('ff09b5f692fad0cbbb8e690ace21f9c7'); // 사용 중인 JS 키 재사용
-            }
-        } catch(e) {
-            console.error("Kakao SDK Init Error", e);
-        }
-
-        function shareKakao() {
-            Kakao.Share.sendDefault({
-                objectType: 'feed',
-                content: {
-                    title: '🍽️ 두쫀쿠 - 전국 맛집 지도',
-                    description: '우리 동네 숨은 맛집, 여기서 다 찾았다! 광고 없는 리얼 후기 보러가기 👇',
-                    imageUrl: 'https://raw.githubusercontent.com/Yong009/do-jjeon-coo/main/docs/preview-image.png',
-                    link: {
-                        mobileWebUrl: 'https://yong009.github.io/do-jjeon-coo/',
-                        webUrl: 'https://yong009.github.io/do-jjeon-coo/',
-                    },
-                },
-                buttons: [
-                    {
-                        title: '맛집 구경하기',
-                        link: {
-                            mobileWebUrl: 'https://yong009.github.io/do-jjeon-coo/',
-                            webUrl: 'https://yong009.github.io/do-jjeon-coo/',
-                        },
-                    },
-                ],
-            });
-        }
-
         var mapContainer = document.getElementById('map');
         var mapOption = {
             center: new kakao.maps.LatLng(37.4782, 126.9515), // 기본 위치 (관악구청 인근)
