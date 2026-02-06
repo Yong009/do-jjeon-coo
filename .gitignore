@@ -1,4 +1,7 @@
 /target/
+/temp_deploy/
+deploy_main.bat
+
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 /mydb.db
