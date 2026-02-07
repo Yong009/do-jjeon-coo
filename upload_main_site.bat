@@ -5,6 +5,10 @@ echo Starting Main Site Upload Process
 echo Target: https://github.com/Yong009/Yong009.github.io.git
 echo ==========================================
 
+
+REM Copy ads.txt to main_site
+copy /Y docs\ads.txt main_site\ads.txt
+
 cd main_site
 
 REM Check if git is initialized

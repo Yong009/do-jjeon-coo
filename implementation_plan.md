@@ -12,6 +12,20 @@
 - **목표**: 사용자에게 시각적인 즐거움을 주는 모던한 인터페이스 구현.
 - **스타일**:
     - `src/main/webapp/css/style.css`: CSS Variables 활용, Inter 폰트, 반응형 레이아웃, 부드러운 애니메이션.
+- [x] Integrate Kakao AdFit and Coupang Partners
+- [x] Fix HIRA Locator Error
+- [x] Connect Stagehand MCP
+- [x] Extract fax numbers and retry
+- [x] Test Chrome DevTools Connection
+- [x] GitHub MCP Connection
+- [x] Retry Fax Crawler Test
+- [x] AdSense Integration
+    - [x] Add verification script to index.html
+    - [x] Create privacy.html
+    - [x] **Fix ads.txt not found error** (Current Task)
+        - [x] Locate ads.txt
+        - [x] Copy ads.txt to deployment folder (main_site)
+        - [x] Update upload_main_site.bat to automate copying
     - 배경: 은은한 메쉬 그라디언트(Mesh Gradient) 또는 다크 모드 기반의 세련된 색상.
 
 ## 3. 기능 구현
