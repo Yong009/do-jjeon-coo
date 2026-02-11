@@ -447,48 +447,7 @@
             // 필요시 추가 가능
         }
 
-        // [재방문 유도] 홈 화면 추가 안내 팝업 (모바일 전용)
-        function showAddToHomePrompt() {
-            // 이미 보았거나 PC 환경이면 패스
-            if (localStorage.getItem('hideAddToHome') || window.innerWidth > 768) return;
 
-            // iOS/Android 감지
-            var userAgent = navigator.userAgent.toLowerCase();
-            var isIOS = /iphone|ipad|ipod/.test(userAgent);
-            var isAndroid = /android/.test(userAgent);
-
-            if (!isIOS && !isAndroid) return; // 모바일 기기가 아니면 패스
-
-            var message = isIOS ? 
-                "하단의 <i class='fa-solid fa-arrow-up-from-bracket'></i> 버튼을 누르고<br>'홈 화면에 추가' 하세요!" : 
-                "브라우저 메뉴에서<br>'홈 화면에 추가'를 눌러보세요!";
-
-            var toast = document.createElement('div');
-            toast.className = "fixed bottom-20 left-1/2 transform -translate-x-1/2 bg-slate-900/90 text-white px-6 py-4 rounded-xl shadow-2xl z-50 text-center w-[90%] max-w-sm backdrop-blur-sm border border-slate-700 animate-bounce";
-            toast.innerHTML = `
-                <div class="flex justify-between items-start mb-2">
-                    <span class="font-bold text-lg">💡 팁</span>
-                    <button onclick="closeAddToHome()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
-                </div>
-                <p class="text-sm mb-3 text-slate-200 leading-relaxed">${message}</p>
-                <div class="text-xs text-slate-400 bg-slate-800 p-2 rounded">
-                    앱처럼 빠르고 편하게 <span class="text-blue-400 font-bold">두쫀쿠</span>를 만나보세요!
-                </div>
-            `;
-            toast.id = "addToHomeToast";
-            document.body.appendChild(toast);
-        }
-
-        function closeAddToHome() {
-            var toast = document.getElementById('addToHomeToast');
-            if (toast) {
-                toast.style.display = 'none';
-                localStorage.setItem('hideAddToHome', 'true'); // 다시 보지 않기 설정
-            }
-        }
-
-        // 페이지 로드 후 3초 뒤에 팝업 표시
-        setTimeout(showAddToHomePrompt, 3000);
 
         // === Roulette Logic ===
         var currentPlaces = [];
