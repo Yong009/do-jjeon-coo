@@ -105,6 +105,12 @@
                     </button>
                 </div>
                 <p class="text-xs text-slate-400 mt-3">* "선택 지역 + 두쫀쿠" 키워드로 검색된 결과를 표시합니다.</p>
+                <div class="mt-6 flex justify-center">
+                    <button onclick="startRoulette()" class="bg-gradient-to-r from-pink-500 to-rose-500 text-white px-6 py-2 rounded-full font-bold shadow-lg hover:shadow-xl hover:scale-105 transition flex items-center gap-2 animate-pulse">
+                        <i class="fa-solid fa-dice text-xl"></i>
+                        <span>오늘 뭐 먹지? (랜덤 추천)</span>
+                    </button>
+                </div>
             </div>
         </section>
 
@@ -323,9 +329,11 @@
             document.getElementById('loading').classList.add('hidden');
 
             if (status === kakao.maps.services.Status.OK) {
+                currentPlaces = data; // Store for roulette
                 displayPlaces(data);
                 displayPagination(pagination);
             } else if (status === kakao.maps.services.Status.ZERO_RESULT) {
+                currentPlaces = [];
                 alert('검색 결과가 존재하지 않습니다.');
                 return;
             } else if (status === kakao.maps.services.Status.ERROR) {
@@ -479,7 +487,92 @@
 
         // 페이지 로드 후 3초 뒤에 팝업 표시
         setTimeout(showAddToHomePrompt, 3000);
+
+        // === Roulette Logic ===
+        var currentPlaces = [];
+
+        function startRoulette() {
+            if (!currentPlaces || currentPlaces.length === 0) {
+                alert("먼저 지역을 검색해주세요!");
+                return;
+            }
+
+            // Show Modal
+            var modal = document.getElementById('rouletteModal');
+            var rouletteBox = document.getElementById('rouletteBox');
+            var resultTitle = document.getElementById('rouletteResultTitle');
+            var resultLink = document.getElementById('rouletteResultLink');
+            
+            modal.classList.remove('hidden');
+            resultTitle.innerText = "두구두구두구...";
+            resultLink.classList.add('hidden');
+            
+            // Animation
+            var count = 0;
+            var maxCount = 20; // Number of shuffles
+            var speed = 100;
+
+            var interval = setInterval(function() {
+                var randomIdx = Math.floor(Math.random() * currentPlaces.length);
+                resultTitle.innerText = currentPlaces[randomIdx].place_name;
+                count++;
+
+                if (count >= maxCount) {
+                    clearInterval(interval);
+                    showFinalResult(currentPlaces[randomIdx]);
+                }
+            }, speed);
+        }
+
+        function showFinalResult(place) {
+            var resultTitle = document.getElementById('rouletteResultTitle');
+            var resultMenu = document.getElementById('rouletteResultMenu');
+            var resultLink = document.getElementById('rouletteResultLink');
+            
+            // Effect
+            resultTitle.classList.add('scale-125', 'text-pink-600');
+            setTimeout(() => resultTitle.classList.remove('scale-125'), 200);
+
+            resultTitle.innerHTML = `<span class="text-slate-900 text-base font-normal">오늘의 선택은...</span><br><span class="text-3xl font-bold text-pink-600">${place.place_name}</span>`;
+            if(place.road_address_name) {
+                resultMenu.innerText = place.road_address_name;
+            }
+            
+            resultLink.href = place.place_url;
+            resultLink.classList.remove('hidden');
+        }
+
+        function closeRoulette() {
+            document.getElementById('rouletteModal').classList.add('hidden');
+        }
+
     </script>
+    
+    <!-- Roulette Modal -->
+    <div id="rouletteModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm hidden" onclick="closeRoulette()">
+        <div id="rouletteBox" class="bg-white rounded-2xl p-8 max-w-sm w-[90%] text-center shadow-2xl transform transition-all scale-100" onclick="event.stopPropagation()">
+            <div class="mb-6">
+                <i class="fa-solid fa-utensils text-4xl text-rose-500 bg-rose-100 p-4 rounded-full"></i>
+            </div>
+            <h3 class="text-2xl font-bold text-slate-800 mb-2">오늘의 맛집은?</h3>
+            
+            <div class="my-6 py-6 border-y border-slate-100 min-h-[120px] flex flex-col justify-center items-center">
+                <h2 id="rouletteResultTitle" class="text-xl font-bold text-slate-700 transition-all duration-100">
+                    두구두구두구...
+                </h2>
+                <p id="rouletteResultMenu" class="text-sm text-slate-500 mt-2"></p>
+            </div>
+
+            <div class="flex flex-col gap-3">
+                <a id="rouletteResultLink" href="#" target="_blank" class="hidden w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 transition">
+                    상세보기 & 길찾기
+                </a>
+                <button onclick="closeRoulette()" class="w-full bg-slate-100 text-slate-600 font-bold py-3 rounded-xl hover:bg-slate-200 transition">
+                    닫기
+                </button>
+            </div>
+        </div>
+    </div>
     
     <!-- Schema.org Structured Data (SEO & Rich Results) -->
     <script type="application/ld+json">
