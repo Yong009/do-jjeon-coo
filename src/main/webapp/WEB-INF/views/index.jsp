@@ -73,7 +73,15 @@
                         <span>탐색</span>
                     </button>
                 </form>
-                <p class="text-xs text-slate-400 mt-3">* 선택한 지역의 맛집 정보를 보여줍니다.</p>
+
+                
+                <p class="text-xs text-slate-400 mt-3">* "선택 지역 + 두쫀쿠" 키워드로 검색된 결과를 표시합니다.</p>
+                <div class="mt-6 flex justify-center">
+                    <button onclick="startRoulette()" class="bg-gradient-to-r from-pink-500 to-rose-500 text-white px-6 py-2 rounded-full font-bold shadow-lg hover:shadow-xl hover:scale-105 transition flex items-center gap-2 animate-pulse">
+                        <i class="fa-solid fa-dice text-xl"></i>
+                        <span>오늘 뭐 먹지? (랜덤 추천)</span>
+                    </button>
+                </div>
             </div>
         </section>
 
@@ -177,7 +185,38 @@
         </div>
     </footer>
 
+    <!-- Roulette Modal -->
+    <div id="rouletteModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm hidden" onclick="closeRoulette()">
+        <div id="rouletteBox" class="bg-white rounded-2xl p-8 max-w-sm w-[90%] text-center shadow-2xl transform transition-all scale-100" onclick="event.stopPropagation()">
+            <div class="mb-6">
+                <i class="fa-solid fa-utensils text-4xl text-rose-500 bg-rose-100 p-4 rounded-full"></i>
+            </div>
+            <h3 class="text-2xl font-bold text-slate-800 mb-2">오늘의 맛집은?</h3>
+            
+            <div class="my-6 py-6 border-y border-slate-100 min-h-[120px] flex flex-col justify-center items-center">
+                <h2 id="rouletteResultTitle" class="text-xl font-bold text-slate-700 transition-all duration-100">
+                    두구두구두구...
+                </h2>
+                <p id="rouletteResultMenu" class="text-sm text-slate-500 mt-2"></p>
+            </div>
+
+            <div class="flex flex-col gap-3">
+                <a id="rouletteResultLink" href="#" target="_blank" class="hidden w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 transition">
+                    상세보기 & 길찾기
+                </a>
+                <button onclick="closeRoulette()" class="w-full bg-slate-100 text-slate-600 font-bold py-3 rounded-xl hover:bg-slate-200 transition">
+                    닫기
+                </button>
+            </div>
+        </div>
+    </div>
+    
     <script>
+        var map;
+        var ps;
+        var infowindow;
+        var currentPlaces = []; // For roulette
+
         // 지역 데이터
         var regionData = {
             '서울': ['관악구', '강남구', '서초구', '마포구', '송파구', '홍대'],
@@ -192,6 +231,9 @@
             var districtSelect = document.getElementById("districtSelect");
             var selectedCity = citySelect.value;
             
+            // JSP에서 선택된 값이 있으면 그것을 유지
+            var cDistrict = "${currentDistrict}";
+            
             districtSelect.innerHTML = "";
             
             if (regionData[selectedCity]) {
@@ -199,7 +241,7 @@
                     var option = document.createElement("option");
                     option.value = district;
                     option.text = district;
-                    if (selectedCity === currentCity && district === currentDistrict) {
+                    if (district === cDistrict) {
                         option.selected = true;
                     }
                     districtSelect.appendChild(option);
@@ -219,48 +261,51 @@
                 center: new kakao.maps.LatLng(37.4782, 126.9515),
                 level: 5
             };
-            var map = new kakao.maps.Map(mapContainer, mapOption);
-            var geocoder = new kakao.maps.services.Geocoder();
+            map = new kakao.maps.Map(mapContainer, mapOption);
+            ps = new kakao.maps.services.Places();
+            infowindow = new kakao.maps.InfoWindow({zIndex:1});
+            
             var bounds = new kakao.maps.LatLngBounds();
 
             // JSP에서 주입된 데이터 (지도 표시용 전체 데이터라고 가정)
-            var stores = [
-                <c:forEach var="store" items="${mapStores}" varStatus="status">
-                {
+            // JSP Loop to JS Array
+            var stores = [];
+            <c:forEach var="store" items="${stores}" varStatus="status">
+                stores.push({
                     name: "${store.name}",
                     address: "${store.address}",
-                    lat: ${store.latitude != null ? store.latitude : 'null'},
-                    lng: ${store.longitude != null ? store.longitude : 'null'}
-                }<c:if test="${!status.last}">,</c:if>
-                </c:forEach>
-            ];
-
-            if (stores.length > 0) {
-                var processedCount = 0;
-                stores.forEach(function(store) {
-                    if (store.lat && store.lng) {
-                        var coords = new kakao.maps.LatLng(store.lat, store.lng);
-                        addMarker(map, coords, store.name);
-                        bounds.extend(coords);
-                        checkBounds();
-                    } else {
-                        geocoder.addressSearch(store.address, function(result, status) {
-                            if (status === kakao.maps.services.Status.OK) {
-                                var coords = new kakao.maps.LatLng(result[0].y, result[0].x);
-                                addMarker(map, coords, store.name);
-                                bounds.extend(coords);
-                            }
-                            checkBounds();
-                        });
-                    }
+                    link: "${store.link}",
+                    latitude: "${store.latitude}",
+                    longitude: "${store.longitude}"
                 });
+            </c:forEach>
+            
+            currentPlaces = []; // Reset for roulette
+            
+            // 기존 마커 표시 로직 + currentPlaces 채우기
+             if (stores.length > 0) {
+                var geocoder = new kakao.maps.services.Geocoder();
+                
+                stores.forEach(function(store) {
+                    // Roulette 데이터 준비 (name, place_url 등등) -> Kakao API 구조와 맞추기 위해 변환
+                    currentPlaces.push({
+                        place_name: store.name,
+                        place_url: store.link,
+                        road_address_name: store.address
+                    });
 
-                function checkBounds() {
-                    processedCount++;
-                    if (processedCount === stores.length && !bounds.isEmpty()) {
-                        map.setBounds(bounds);
-                    }
-                }
+                    // 지도 마커 표시 (좌표가 있거나 주소로 검색)
+                    // (JSP backend에서 좌표를 주면 베스트, 없으면 geocoder)
+                    geocoder.addressSearch(store.address, function(result, status) {
+                         if (status === kakao.maps.services.Status.OK) {
+                            var coords = new kakao.maps.LatLng(result[0].y, result[0].x);
+                            addMarker(map, coords, store.name);
+                            bounds.extend(coords);
+                            // 마지막에 setBounds
+                            map.setBounds(bounds);
+                        }
+                    });
+                });
             }
         }
 
@@ -271,12 +316,119 @@
                 title: title
             });
             
+            var iwContent = '<div style="padding:5px;font-size:12px;color:black;">' + title + '</div>';
             var infowindow = new kakao.maps.InfoWindow({
-                content: '<div style="padding:5px;font-size:12px;color:black;">' + title + '</div>'
+                content: iwContent
             });
 
             kakao.maps.event.addListener(marker, 'click', function() {
                 infowindow.open(map, marker);
+            });
+        }
+        
+        // === Roulette Logic ===
+        function startRoulette() {
+            if (!currentPlaces || currentPlaces.length === 0) {
+                alert("먼저 지역을 검색해주세요!");
+                return;
+            }
+
+            // Show Modal
+            var modal = document.getElementById('rouletteModal');
+            var rouletteBox = document.getElementById('rouletteBox');
+            var resultTitle = document.getElementById('rouletteResultTitle');
+            var resultLink = document.getElementById('rouletteResultLink');
+            
+            modal.classList.remove('hidden');
+            resultTitle.innerText = "두구두구두구...";
+            resultLink.classList.add('hidden');
+            
+            // Animation
+            var count = 0;
+            var maxCount = 20; // Number of shuffles
+            var speed = 100;
+
+            var interval = setInterval(function() {
+                var randomIdx = Math.floor(Math.random() * currentPlaces.length);
+                resultTitle.innerText = currentPlaces[randomIdx].place_name;
+                count++;
+
+                if (count >= maxCount) {
+                    clearInterval(interval);
+                    showFinalResult(currentPlaces[randomIdx]);
+                }
+            }, speed);
+        }
+
+        function showFinalResult(place) {
+            var resultTitle = document.getElementById('rouletteResultTitle');
+            var resultMenu = document.getElementById('rouletteResultMenu');
+            var resultLink = document.getElementById('rouletteResultLink');
+            
+            // Effect
+            resultTitle.classList.add('scale-125', 'text-pink-600');
+            setTimeout(() => resultTitle.classList.remove('scale-125'), 200);
+
+            resultTitle.innerHTML = '<span class="text-slate-900 text-base font-normal">오늘의 선택은...</span><br><span class="text-3xl font-bold text-pink-600">' + place.place_name + '</span>';
+            if(place.road_address_name) {
+                resultMenu.innerText = place.road_address_name;
+            }
+            
+            resultLink.href = place.place_url;
+            resultLink.classList.remove('hidden');
+        }
+
+        function closeRoulette() {
+            document.getElementById('rouletteModal').classList.add('hidden');
+        }
+
+        // === Geolocation & Nearby Search (Simulated for JSP) ===
+        // JSP는 서버 사이드 렌더링이므로, 클라이언트 위치를 받아서 Redirect하거나
+        // AJAX로 다시 로딩해야 함. 여기서는 Redirect 방식을 사용.
+        function searchNearby() {
+            if (!navigator.geolocation) {
+                alert('이 브라우저에서는 위치 정보를 지원하지 않습니다.');
+                return;
+            }
+            
+            alert("위치 정보를 기반으로 가까운 지역을 검색합니다.");
+
+            navigator.geolocation.getCurrentPosition(function(position) {
+                var lat = position.coords.latitude;
+                var lng = position.coords.longitude;
+                
+                // Kakao Geocoder로 행정동 찾기
+                var geocoder = new kakao.maps.services.Geocoder();
+                geocoder.coord2RegionCode(lng, lat, function(result, status) {
+                    if (status === kakao.maps.services.Status.OK) {
+                         var regionName = "";
+                        for(var i = 0; i < result.length; i++) {
+                            // 행정동(H)을 우선 사용
+                            if (result[i].region_type === 'H') {
+                                regionName = result[i].region_3depth_name;
+                                break;
+                            }
+                        }
+                        if (!regionName && result.length > 0) {
+                            regionName = result[0].region_3depth_name;
+                        }
+                        
+                        if(regionName) {
+                            // 단순화를 위해 query param으로 넘김 (실제로는 city/district 매핑이 필요할 수 있음)
+                            // 여기서는 예시로 '서울' '관악구' 처럼 매핑 로직이 복잡하므로
+                            // 단순히 검색어(regionName)를 가지고 서버에 요청하거나,
+                            // 클라이언트 사이드인 docs/index.html 처럼 카카오 API 직접 호출 방식(AJAX)으로 변경해야 완벽함.
+                            // JSP 구조상 서버 검색을 타야 하므로, 가장 유사한 로직으로 '검색'을 수행하도록 구현.
+                            
+                            // 하지만 JSP 백엔드에 '동' 단위 검색이 구현되어 있는지 불확실하므로,
+                            // 여기서는 "클라이언트 사이드 렌더링 방식"을 일부 차용하거나
+                            // 알림만 띄움.
+                            
+                            alert("현재 위치: " + regionName + "\n\n(JSP 버전에서는 해당 기능이 제한적일 수 있습니다. 정적 웹 버전을 이용해주세요.)");
+                            // location.href = "./?city=서울&district=관악구"; // 예시
+                        }
+                    }
+                });
             });
         }
     </script>
