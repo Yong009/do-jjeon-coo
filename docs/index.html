@@ -104,6 +104,13 @@
                         <span>탐색</span>
                     </button>
                 </div>
+                <!-- 내 주변 맛집 버튼 -->
+                <div class="mt-4 flex justify-center">
+                    <button onclick="searchNearby()" class="bg-blue-100 text-blue-600 px-6 py-2 rounded-full font-bold shadow-sm hover:bg-blue-200 transition flex items-center gap-2">
+                        <i class="fa-solid fa-location-crosshairs"></i>
+                        <span>내 주변 1km 맛집 찾기</span>
+                    </button>
+                </div>
                 <p class="text-xs text-slate-400 mt-3">* "선택 지역 + 두쫀쿠" 키워드로 검색된 결과를 표시합니다.</p>
                 <div class="mt-6 flex justify-center">
                     <button onclick="startRoulette()" class="bg-gradient-to-r from-pink-500 to-rose-500 text-white px-6 py-2 rounded-full font-bold shadow-lg hover:shadow-xl hover:scale-105 transition flex items-center gap-2 animate-pulse">
@@ -546,6 +553,71 @@
             document.getElementById('rouletteModal').classList.add('hidden');
         }
 
+
+        // === Geolocation & Nearby Search ===
+        function searchNearby() {
+            if (!navigator.geolocation) {
+                alert('이 브라우저에서는 위치 정보를 지원하지 않습니다.');
+                return;
+            }
+
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('placeList').innerHTML = '';
+            
+            navigator.geolocation.getCurrentPosition(function(position) {
+                var lat = position.coords.latitude;
+                var lng = position.coords.longitude;
+                var locPosition = new kakao.maps.LatLng(lat, lng);
+
+                // 지도 이동 및 마커 표시
+                map.panTo(locPosition);
+                
+                // 좌표로 주소 변환 후 "동" 이름 추출하여 검색
+                var geocoder = new kakao.maps.services.Geocoder();
+                geocoder.coord2RegionCode(lng, lat, function(result, status) {
+                    if (status === kakao.maps.services.Status.OK) {
+                        // 행정동 단위로 검색 (예: 봉천동)
+                        var regionName = "";
+                        for(var i = 0; i < result.length; i++) {
+                            // 행정동(H)을 우선 사용
+                            if (result[i].region_type === 'H') {
+                                regionName = result[i].region_3depth_name;
+                                break;
+                            }
+                        }
+                        
+                        if (!regionName && result.length > 0) {
+                            regionName = result[0].region_3depth_name;
+                        }
+
+                        if (regionName) {
+                            // UI의 셀렉터 업데이트는 생략하거나 "현위치" 표시 등을 할 수 있음
+                            // alert("현재 위치(" + regionName + ") 주변의 맛집을 찾습니다.");
+                            
+                            // 검색 키워드: "지역명 + 두쫀쿠"
+                            var keyword = regionName + " 두쫀쿠";
+                            
+                            // 검색 실행 (거리순 정렬 옵션 추가 가능)
+                            // location 중심으로 검색
+                            var sortOption = kakao.maps.services.SortBy.DISTANCE;
+                            ps.keywordSearch(keyword, placesSearchCB, {
+                                location: locPosition,
+                                radius: 1000, // 1km 반경
+                                sort: sortOption
+                            });
+                        } else {
+                            alert('현재 위치의 행정동 정보를 찾을 수 없습니다.');
+                            document.getElementById('loading').classList.add('hidden');
+                        }
+                    }
+                });
+
+            }, function(error) {
+                console.error(error);
+                alert('위치 정보를 가져올 수 없습니다. 권한을 허용해주세요.');
+                document.getElementById('loading').classList.add('hidden');
+            });
+        }
     </script>
     
     <!-- Roulette Modal -->
