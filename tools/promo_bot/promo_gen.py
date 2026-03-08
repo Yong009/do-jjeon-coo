@@ -16,6 +16,9 @@ FONT_SIZE_TITLE = 60
 FONT_SIZE_SUB = 40
 FONT_SIZE_TAG = 25
 
+# 검색 키워드 리스트
+SEARCH_KEYWORDS = ["두쫀쿠", "봄동비빔밥"]
+
 # 지역 데이터 (index.html과 동일하게 유지)
 REGION_DATA = {
     '서울': ['관악구', '강남구', '서초구', '마포구', '송파구', '홍대'],
@@ -60,7 +63,7 @@ def draw_centered_text(draw, text, font, image_width, y_pos, color=(0, 0, 0)):
     draw.text((x_pos, y_pos), text, font=font, fill=color)
     return text_bbox[3] - text_bbox[1] # Height
 
-def generate_promo_content():
+def generate_promo_content(selected_keyword=None):
     ensure_dir(OUTPUT_DIR)
     
     # 1. 랜덤 데이터 선택
@@ -72,6 +75,12 @@ def generate_promo_content():
     
     sub_title_text = random.choice(SUB_TITLES)
     bg_color = random.choice(COLORS)
+    
+    # 키워드 선택 (매개변수가 있으면 사용, 없으면 랜덤)
+    if selected_keyword and selected_keyword in SEARCH_KEYWORDS:
+        search_keyword = selected_keyword
+    else:
+        search_keyword = random.choice(SEARCH_KEYWORDS)
     
     # 2. 이미지 생성 (Facebook/Instagram 용 1080x1080)
     width, height = 1080, 1080
@@ -114,7 +123,7 @@ def generate_promo_content():
     )
     
     # 검색어 텍스트
-    search_text = f"검색창에 '{city} {district} 두쫀쿠'"
+    search_text = f"검색창에 '{city} {district} {search_keyword}'"
     search_font = ImageFont.truetype(FONT_PATH, 35)
     
     # 검색 돋보기 아이콘 (약식 텍스트)
@@ -131,7 +140,8 @@ def generate_promo_content():
         "image_path": filepath,
         "city": city,
         "district": district,
-        "title": title_text
+        "title": title_text,
+        "keyword": search_keyword
     }
 
 if __name__ == "__main__":
@@ -139,7 +149,20 @@ if __name__ == "__main__":
     print("      두쫀쿠 홍보 콘텐츠 생성기 v1.0")
     print("==========================================")
     
-    result = generate_promo_content()
+    print("\n어떤 키워드로 홍보 이미지를 만들까요?")
+    for i, kw in enumerate(SEARCH_KEYWORDS, 1):
+        print(f"[{i}] {kw}")
+    print("[R] 랜덤 선택")
+    
+    choice = input("\n번호를 입력하세요 (기본값: 랜덤): ").strip().upper()
+    
+    selected_kw = None
+    if choice.isdigit():
+        idx = int(choice) - 1
+        if 0 <= idx < len(SEARCH_KEYWORDS):
+            selected_kw = SEARCH_KEYWORDS[idx]
+    
+    result = generate_promo_content(selected_kw)
     
     print("\n[SUCCESS] 이미지가 생성되었습니다!")
     print(f"👉 파일 위치: {os.path.abspath(result['image_path'])}")
@@ -151,7 +174,7 @@ if __name__ == "__main__":
     print(f"매일 뭐 먹을지 고민이라면? 광고 없는 찐맛집 지도, 두쫀쿠!")
     print(f"지금 바로 '{result['city']} {result['district']}' 맛집을 확인해보세요.")
     print("")
-    print(f"👉 프로필 링크 클릭 or 네이버에 '두쫀쿠' 검색!")
+    print(f"👉 프로필 링크 클릭 or 네이버에 '{result['keyword']}' 검색!")
     print("")
-    print(f"#{result['city']}맛집 #{result['district']}맛집 #두쫀쿠 #점심메뉴추천 #맛집지도 #노광고")
+    print(f"#{result['city']}맛집 #{result['district']}맛집 #{result['keyword']} #두쫀쿠 #점심메뉴추천 #맛집지도 #노광고")
     print("------------------------------------------")
